@@ -850,14 +850,18 @@ function setBtnLoading(id, loading, label='') {
 
 // ── INICIALIZACIÓN ────────────────────────────────────────────
 async function init() {
-  // Escuchar cambios de sesión
+  // Registrar listener ANTES de cualquier otra cosa
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      // El usuario llegó desde el enlace de reset — pedir nueva contraseña
       go('s-reset-pass');
       return;
     }
     if (event === 'SIGNED_IN' && session) {
+      // Si la URL contiene type=recovery, es un reset — no cargar la app
+      if (window.location.hash.includes('type=recovery')) {
+        go('s-reset-pass');
+        return;
+      }
       currentUser = session.user;
       await loadUserData();
     } else if (event === 'SIGNED_OUT') {
@@ -869,7 +873,15 @@ async function init() {
     }
   });
 
-  // Comprobar sesión existente
+  // Comprobar si la URL ya tiene un token de recovery (llegamos desde el email)
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    // Supabase procesará el token y disparará PASSWORD_RECOVERY o SIGNED_IN
+    // El listener de arriba lo capturará — solo esperamos
+    return;
+  }
+
+  // Flujo normal: comprobar sesión existente
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -957,10 +969,9 @@ async function doResetPassword() {
   setBtnLoading('btn-reset-pass', false, 'Guardar contraseña');
   if (error) { toast('❌ ' + error.message); return; }
   toast('✅ Contraseña actualizada');
-  // Ahora cargar la app normalmente
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) { currentUser = session.user; await loadUserData(); }
-  else { go('s-login'); }
+  // Cerrar sesión y pedir que entre de nuevo con la nueva contraseña
+  await sb.auth.signOut();
+  go('s-login');
 }
 
 // ── AUTH: LOGOUT ──────────────────────────────────────────────

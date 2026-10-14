@@ -27,7 +27,7 @@
   .ms { font-family:'Material Symbols Rounded'; font-size:24px; line-height:1; user-select:none; }
   .topbar { background:var(--green-dark); color:#fff; display:flex; align-items:center; padding:calc(var(--safe-top) + 12px) 16px 12px; gap:12px; flex-shrink:0; }
   .topbar h1 { font-size:18px; font-weight:600; flex:1; }
-  .scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; }
+  .scroll { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; padding-bottom:80px; }
   .card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
   .btn { display:flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; padding:14px 20px; transition:opacity .15s; }
   .w-full { width:100%; }
@@ -242,13 +242,7 @@
       </div>
     </div>
   </div>
-  <div class="tabbar" id="main-tabs">
-    <div class="tab-item active" onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
-    <div class="tab-item" onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
-    <div class="tab-item" onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
-    <div class="tab-item" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
-    <div class="tab-item" onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
-  </div>
+  <div style="height:env(safe-area-inset-bottom,0px);flex-shrink:0;"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -269,13 +263,6 @@
       <div id="task-filter-done"  class="pet-chip" onclick="filterTasks('done')">Completadas</div>
     </div>
     <div id="tasks-list"></div>
-  </div>
-  <div class="tabbar">
-    <div class="tab-item" onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
-    <div class="tab-item active" onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
-    <div class="tab-item" onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
-    <div class="tab-item" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
-    <div class="tab-item" onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
   </div>
 </div>
 
@@ -309,13 +296,6 @@
       <div id="gps-history-list"><div style="color:#aaa;font-size:13px;text-align:center;padding:16px;">Sin historial</div></div>
     </div>
   </div>
-  <div class="tabbar">
-    <div class="tab-item" onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
-    <div class="tab-item" onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
-    <div class="tab-item active" onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
-    <div class="tab-item" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
-    <div class="tab-item" onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
-  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -342,13 +322,6 @@
       <div style="font-size:13px;color:#666;margin-bottom:12px;">Regístralo gratis. Los negocios <strong>Destacados ⭐</strong> aparecen los primeros.</div>
       <button onclick="go('s-add-service')" class="btn btn-primary btn-sm">Registrar mi negocio</button>
     </div>
-  </div>
-  <div class="tabbar">
-    <div class="tab-item" onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
-    <div class="tab-item" onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
-    <div class="tab-item" onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
-    <div class="tab-item active" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
-    <div class="tab-item" onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
   </div>
 </div>
 
@@ -418,13 +391,6 @@
       <div class="pet-chip" onclick="filterAdoptCat(this,'other')">Otros</div>
     </div>
     <div id="adopt-list"></div>
-  </div>
-  <div class="tabbar">
-    <div class="tab-item" onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
-    <div class="tab-item" onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
-    <div class="tab-item" onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
-    <div class="tab-item" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
-    <div class="tab-item active" onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
   </div>
 </div>
 
@@ -696,7 +662,14 @@
     <label class="label">Fecha de nacimiento</label>
     <input id="pet-birth-input" class="input" type="date" style="margin-bottom:14px;"/>
     <label class="label">Peso (kg)</label>
-    <input id="pet-weight-input" class="input" type="number" step="0.1" placeholder="25.5" style="margin-bottom:24px;"/>
+    <input id="pet-weight-input" class="input" type="number" step="0.1" placeholder="25.5" style="margin-bottom:14px;"/>
+    <label class="label">Foto (opcional)</label>
+    <input type="file" id="pet-photo-input" accept="image/*" style="display:none" onchange="previewPetPhoto(this)"/>
+    <div id="pet-photo-preview" onclick="document.getElementById('pet-photo-input').click()"
+         style="width:100%;height:140px;border-radius:16px;border:2px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;margin-bottom:24px;overflow:hidden;background:#f9f9f9;transition:border-color .2s;">
+      <span class="ms" style="font-size:32px;color:#aaa;">add_a_photo</span>
+      <span style="font-size:13px;color:#aaa;">Toca para añadir foto</span>
+    </div>
     <button id="btn-add-pet" class="btn btn-primary" style="width:100%;" onclick="doAddPet()">Añadir mascota</button>
   </div>
 </div>
@@ -780,11 +753,38 @@ let adoptCatFilter = 'all';
 let trackingInterval = null;
 
 // ── NAVEGACIÓN ────────────────────────────────────────────────
+const MAIN_SCREENS = new Set(['s-home','s-tasks','s-gps','s-services','s-adopt']);
+const HIDE_TABBAR_SCREENS = new Set(['s-splash','s-onboarding','s-reset-pass','s-login','s-register','s-forgot','s-setup-family','s-create-family','s-join-family']);
+
+function updateGlobalTabbar(screenId) {
+  const tb = document.getElementById('global-tabbar');
+  if (!tb) return;
+  if (HIDE_TABBAR_SCREENS.has(screenId)) {
+    tb.style.display = 'none';
+    return;
+  }
+  tb.style.display = '';
+  // Actualizar activo
+  const map = { 's-home':'gtab-home','s-tasks':'gtab-tasks','s-gps':'gtab-gps','s-services':'gtab-services','s-adopt':'gtab-adopt' };
+  ['gtab-home','gtab-tasks','gtab-gps','gtab-services','gtab-adopt'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  // Marca la pestaña principal correspondiente (si es pantalla secundaria, ninguna activa)
+  const activeTab = map[screenId];
+  if (activeTab) document.getElementById(activeTab)?.classList.add('active');
+  // Añadir padding al bottom de la pantalla activa para que la tabbar no tape contenido
+  document.querySelectorAll('.screen').forEach(s => s.style.paddingBottom = '');
+  const active = document.getElementById(screenId);
+  if (active) active.style.paddingBottom = '60px';
+}
+
 function go(screenId) {
   const prev = document.querySelector('.screen.active');
   if (prev && prev.id !== screenId) screenHistory.push(prev.id);
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(screenId).classList.add('active');
+  updateGlobalTabbar(screenId);
 }
 
 function back() {
@@ -798,24 +798,6 @@ function back() {
 function setTab(screenId) {
   screenHistory = [];
   go(screenId);
-  // Actualizar tab activo
-  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-  const tabScreenMap = {
-    's-home':'0','s-tasks':'1','s-gps':'2','s-services':'3','s-adopt':'4'
-  };
-  const idx = tabScreenMap[screenId];
-  if (idx !== undefined) {
-    document.querySelectorAll(`#${screenId} .tab-item`)[idx]?.classList.add('active');
-    // Fallback: busca en todas las tabbars del screen activo
-    const activeScreen = document.getElementById(screenId);
-    if (activeScreen) {
-      const tabs = activeScreen.querySelectorAll('.tab-item');
-      const labels = ['s-home','s-tasks','s-gps','s-services','s-adopt'];
-      tabs.forEach((t,i) => {
-        t.classList.toggle('active', labels[i] === screenId);
-      });
-    }
-  }
   // Cargar datos según pantalla
   if (screenId === 's-tasks')    loadTasks();
   if (screenId === 's-services') loadServices();
@@ -1078,12 +1060,19 @@ function petEmoji(species) {
   return map[species] || '🐾';
 }
 
+function petAvatar(p, size=28) {
+  if (p.photo_url) {
+    return `<img src="${p.photo_url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'"/>`;
+  }
+  return `<span style="font-size:${Math.round(size*0.7)}px;">${petEmoji(p.species)}</span>`;
+}
+
 function renderPetChips(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
   el.innerHTML = currentPets.map(p => `
-    <div class="pet-chip ${p.id === activePetId ? 'active' : ''}" onclick="selectPet('${p.id}','${containerId}')">
-      ${petEmoji(p.species)} ${p.name}
+    <div class="pet-chip ${p.id === activePetId ? 'active' : ''}" onclick="selectPet('${p.id}','${containerId}')" style="display:flex;align-items:center;gap:6px;">
+      ${petAvatar(p, 24)} ${p.name}
     </div>
   `).join('') + (currentPets.length === 0 ? '<span style="color:#aaa;font-size:13px;cursor:pointer;" onclick="go(\'s-add-pet\')">+ Añadir mascota</span>' : '');
 }
@@ -1543,7 +1532,9 @@ async function renderProfile() {
   } else {
     petsList.innerHTML = currentPets.map(p => `
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f0f0;">
-        <div style="font-size:32px;">${petEmoji(p.species)}</div>
+        ${p.photo_url
+          ? `<img src="${p.photo_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.outerHTML='<div style=\\'font-size:32px;\\'>${petEmoji(p.species)}</div>'">`
+          : `<div style="font-size:32px;">${petEmoji(p.species)}</div>`}
         <div style="flex:1;">
           <div style="font-weight:600;">${escHtml(p.name)}</div>
           <div style="font-size:12px;color:#888;">${p.breed||p.species}${p.birth_date ? ' · '+calcAge(p.birth_date) : ''}${p.weight_kg ? ' · '+p.weight_kg+'kg' : ''}</div>
@@ -1622,6 +1613,29 @@ function calcAge(birthDate) {
 }
 
 // ── AÑADIR MASCOTA ────────────────────────────────────────────
+function previewPetPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('pet-photo-preview');
+    prev.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;"/>`;
+    prev.style.border = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadPetPhoto(petId, file) {
+  try {
+    const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const path = `${currentFamily.id}/${petId}.${ext}`;
+    const { error } = await sb.storage.from('pet-photos').upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { console.warn('Upload error:', error.message); return null; }
+    const { data } = sb.storage.from('pet-photos').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e) { return null; }
+}
+
 async function doAddPet() {
   const name    = document.getElementById('pet-name-input').value.trim();
   const species = document.getElementById('pet-species-input').value;
@@ -1637,10 +1651,25 @@ async function doAddPet() {
     birth_date: birth || null,
     weight_kg: isNaN(weight) ? null : weight
   }).select().single();
+  if (error) { setBtnLoading('btn-add-pet', false, 'Añadir mascota'); toast('❌ ' + error.message); return; }
+
+  // Subir foto si se eligió
+  const photoFile = document.getElementById('pet-photo-input').files[0];
+  if (photoFile) {
+    const photoUrl = await uploadPetPhoto(data.id, photoFile);
+    if (photoUrl) {
+      await sb.from('pets').update({ photo_url: photoUrl }).eq('id', data.id);
+      data.photo_url = photoUrl;
+    }
+  }
+
   setBtnLoading('btn-add-pet', false, 'Añadir mascota');
-  if (error) { toast('❌ ' + error.message); return; }
   currentPets.push(data);
   activePetId = data.id;
+  // Reset form
+  document.getElementById('pet-photo-input').value = '';
+  document.getElementById('pet-photo-preview').innerHTML = `<span class="ms" style="font-size:32px;color:#aaa;">add_a_photo</span><span style="font-size:13px;color:#aaa;">Toca para añadir foto</span>`;
+  document.getElementById('pet-photo-preview').style.border = '2px dashed #ccc';
   toast(`🐾 ${name} añadido/a`);
   renderHome();
   renderProfile();
@@ -1922,5 +1951,16 @@ window.go = function(screenId) {
 // ── INICIO ────────────────────────────────────────────────────
 init();
 </script>
+
+<!-- ═══════════════════════════════════════════════
+     TABBAR GLOBAL (siempre visible)
+═══════════════════════════════════════════════ -->
+<div id="global-tabbar" class="tabbar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;">
+  <div class="tab-item" id="gtab-home"     onclick="setTab('s-home')"><span class="ms">cottage</span>Inicio</div>
+  <div class="tab-item" id="gtab-tasks"    onclick="setTab('s-tasks')"><span class="ms">task_alt</span>Tareas</div>
+  <div class="tab-item" id="gtab-gps"      onclick="setTab('s-gps')"><span class="ms">my_location</span>GPS</div>
+  <div class="tab-item" id="gtab-services" onclick="setTab('s-services')"><span class="ms">store</span>Servicios</div>
+  <div class="tab-item" id="gtab-adopt"    onclick="setTab('s-adopt')"><span class="ms">pets</span>Adopción</div>
+</div>
 </body>
 </html>

@@ -2266,78 +2266,83 @@ async function loadRoutineTemplates() {
 // ── RUTINAS: GENERAR TAREAS DE HOY ────────────────────────────
 async function ensureTodayRoutineTasks() {
   if (!currentFamily || !routineTemplates.length) return;
-  const todayStr   = new Date().toISOString().split('T')[0];
-  const dayOfWeek  = new Date().getDay();
-  const dayOfMonth = new Date().getDate();
 
-  // Separar rutinas normales de medicación (tienen start_date/end_date)
+  const DAYS_AHEAD = 7;
   const regularTemplates = routineTemplates.filter(t => !t.start_date);
   const medTemplates     = routineTemplates.filter(t => t.start_date);
 
-  // ── Rutinas normales ────────────────────────────────────────
-  const applicable = regularTemplates.filter(t => {
-    if (t.recurrence === 'daily') return true;
-    if (t.recurrence === 'weekly')  return t.day_of_week  === dayOfWeek;
-    if (t.recurrence === 'monthly') return t.day_of_month === dayOfMonth;
-    return false;
-  });
+  for (let dayOffset = 0; dayOffset < DAYS_AHEAD; dayOffset++) {
+    const date = new Date();
+    date.setDate(date.getDate() + dayOffset);
+    const dateStr    = date.toISOString().split('T')[0];
+    const dayOfWeek  = date.getDay();
+    const dayOfMonth = date.getDate();
 
-  if (applicable.length) {
-    const ids = applicable.map(t => t.id);
-    const { data: existing } = await sb.from('tasks')
-      .select('routine_template_id')
-      .in('routine_template_id', ids)
-      .eq('task_date', todayStr);
-    const doneSet = new Set((existing || []).map(t => t.routine_template_id));
-
-    const toInsert = applicable.filter(t => !doneSet.has(t.id)).map(t => {
-      const [h, m] = (t.scheduled_time || '09:00').split(':').map(Number);
-      const due = new Date(); due.setHours(h, m, 0, 0);
-      return {
-        family_id: currentFamily.id, pet_id: t.pet_id,
-        assigned_to: t.assigned_to || currentUser.id,
-        created_by: currentUser.id, type: t.type, title: t.title,
-        due_at: due.toISOString(), task_date: todayStr,
-        routine_template_id: t.id, is_recurring: true, recurrence: t.recurrence,
-      };
+    // ── Rutinas normales ────────────────────────────────────────
+    const applicable = regularTemplates.filter(t => {
+      if (!t.is_active) return false;
+      if (t.recurrence === 'daily') return true;
+      if (t.recurrence === 'weekly')  return t.day_of_week  === dayOfWeek;
+      if (t.recurrence === 'monthly') return t.day_of_month === dayOfMonth;
+      return false;
     });
-    if (toInsert.length) await sb.from('tasks').insert(toInsert);
-  }
 
-  // ── Medicación: solo dentro del rango de fechas ─────────────
-  const activeMeds = medTemplates.filter(t =>
-    t.start_date <= todayStr && (!t.end_date || t.end_date >= todayStr)
-  );
+    if (applicable.length) {
+      const ids = applicable.map(t => t.id);
+      const { data: existing } = await sb.from('tasks')
+        .select('routine_template_id')
+        .in('routine_template_id', ids)
+        .eq('task_date', dateStr);
+      const doneSet = new Set((existing || []).map(t => t.routine_template_id));
 
-  for (const t of activeMeds) {
-    const freqH    = t.frequency_hours || 24;
-    const dosesDay = Math.round(24 / freqH);   // 1, 2, 3 o 4
-
-    // Ver cuántas tareas ya existen hoy para esta plantilla
-    const { data: ex } = await sb.from('tasks')
-      .select('id')
-      .eq('routine_template_id', t.id)
-      .eq('task_date', todayStr);
-    const existingCount = (ex || []).length;
-    if (existingCount >= dosesDay) continue;   // ya generadas
-
-    const [h0, m0] = (t.scheduled_time || '08:00').split(':').map(Number);
-    const toInsert = [];
-    for (let i = existingCount; i < dosesDay; i++) {
-      const totalMin = h0 * 60 + m0 + i * freqH * 60;
-      const due = new Date();
-      due.setHours(Math.floor(totalMin / 60) % 24, totalMin % 60, 0, 0);
-      const doseLabel = dosesDay > 1 ? ` (${i + 1}/${dosesDay})` : '';
-      toInsert.push({
-        family_id: currentFamily.id, pet_id: t.pet_id,
-        assigned_to: t.assigned_to || currentUser.id,
-        created_by: currentUser.id, type: 'medication',
-        title: t.title + doseLabel,
-        due_at: due.toISOString(), task_date: todayStr,
-        routine_template_id: t.id, is_recurring: false, recurrence: 'daily',
+      const toInsert = applicable.filter(t => !doneSet.has(t.id)).map(t => {
+        const [h, m] = (t.scheduled_time || '09:00').split(':').map(Number);
+        const due = new Date(date); due.setHours(h, m, 0, 0);
+        return {
+          family_id: currentFamily.id, pet_id: t.pet_id,
+          assigned_to: t.assigned_to || currentUser.id,
+          created_by: currentUser.id, type: t.type, title: t.title,
+          due_at: due.toISOString(), task_date: dateStr,
+          routine_template_id: t.id, is_recurring: true, recurrence: t.recurrence,
+        };
       });
+      if (toInsert.length) await sb.from('tasks').insert(toInsert);
     }
-    if (toInsert.length) await sb.from('tasks').insert(toInsert);
+
+    // ── Medicación: solo dentro del rango de fechas ─────────────
+    const activeMeds = medTemplates.filter(t =>
+      t.is_active && t.start_date <= dateStr && (!t.end_date || t.end_date >= dateStr)
+    );
+
+    for (const t of activeMeds) {
+      const freqH    = t.frequency_hours || 24;
+      const dosesDay = Math.round(24 / freqH);
+
+      const { data: ex } = await sb.from('tasks')
+        .select('id')
+        .eq('routine_template_id', t.id)
+        .eq('task_date', dateStr);
+      const existingCount = (ex || []).length;
+      if (existingCount >= dosesDay) continue;
+
+      const [h0, m0] = (t.scheduled_time || '08:00').split(':').map(Number);
+      const toInsert = [];
+      for (let i = existingCount; i < dosesDay; i++) {
+        const totalMin = h0 * 60 + m0 + i * freqH * 60;
+        const due = new Date(date);
+        due.setHours(Math.floor(totalMin / 60) % 24, totalMin % 60, 0, 0);
+        const doseLabel = dosesDay > 1 ? ` (${i + 1}/${dosesDay})` : '';
+        toInsert.push({
+          family_id: currentFamily.id, pet_id: t.pet_id,
+          assigned_to: t.assigned_to || currentUser.id,
+          created_by: currentUser.id, type: 'medication',
+          title: t.title + doseLabel,
+          due_at: due.toISOString(), task_date: dateStr,
+          routine_template_id: t.id, is_recurring: false, recurrence: 'daily',
+        });
+      }
+      if (toInsert.length) await sb.from('tasks').insert(toInsert);
+    }
   }
 }
 

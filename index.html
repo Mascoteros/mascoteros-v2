@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#102216"/>
 <title>Mascoteros</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet"/>
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Mascoteros"/>
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
@@ -56,8 +61,9 @@
   .stat-box .lbl { font-size:11px; color:#777; margin-top:2px; }
   .empty-state { text-align:center; padding:48px 24px; color:#aaa; }
   .empty-state .ms { font-size:56px; margin-bottom:12px; }
-  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 20px; border-radius:12px; font-size:14px; z-index:9999; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap; }
-  .toast.show { opacity:1; }
+  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:10px 16px; border-radius:12px; font-size:14px; z-index:9999; opacity:0; transition:opacity .3s; pointer-events:none; display:flex; align-items:center; gap:10px; max-width:92vw; }
+  .toast.show { opacity:1; pointer-events:auto; }
+  .toast-undo { background:var(--green-light); color:#fff; border:none; border-radius:8px; padding:4px 10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
   .spinner { width:20px; height:20px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
   @keyframes spin { to { transform:rotate(360deg); } }
   .map-placeholder { background:linear-gradient(135deg,#c8e6c9,#a5d6a7); border-radius:16px; height:220px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px; color:var(--green-dark); font-size:13px; font-weight:600; }
@@ -203,23 +209,43 @@
     <button onclick="go('s-profile')" style="background:none;border:none;color:#fff;cursor:pointer;"><span class="ms">account_circle</span></button>
   </div>
   <div class="scroll">
-    <!-- Mascota activa -->
+    <!-- Banner notificaciones -->
+    <div id="notif-banner" style="display:none;background:#FFF8E1;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <span class="ms" style="color:#F57F17;flex-shrink:0;">notifications</span>
+      <span style="font-size:13px;color:#555;flex:1;">Activa las notificaciones para recordatorios de tareas</span>
+      <button onclick="activateNotifications()" class="btn btn-sm" style="background:#F57F17;color:#fff;flex-shrink:0;">Activar</button>
+      <button onclick="document.getElementById('notif-banner').style.display='none'" style="background:none;border:none;color:#aaa;cursor:pointer;padding:4px;"><span class="ms" style="font-size:18px;">close</span></button>
+    </div>
+
+    <!-- Mascotas -->
     <div id="pet-chips" style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;"></div>
+
+    <!-- MIS TAREAS HOY — sección principal -->
+    <div class="card" style="border-left:4px solid var(--green-main);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <span style="font-size:17px;font-weight:700;">Mis tareas de hoy</span>
+          <div id="home-greeting" style="font-size:12px;color:#888;margin-top:2px;"></div>
+        </div>
+        <button onclick="openNewTask()" class="btn btn-primary btn-sm"><span class="ms" style="font-size:18px;">add</span></button>
+      </div>
+      <div id="home-my-tasks"><div class="empty-state" style="padding:16px;"><span class="ms">check_circle</span><p style="font-size:14px;margin:8px 0 0;">¡Sin tareas hoy! 🎉</p></div></div>
+    </div>
+
+    <!-- TAREAS DE LA FAMILIA -->
+    <div id="home-family-tasks-section" class="card" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:15px;font-weight:700;">Resto de la familia</span>
+        <span style="color:var(--green-main);font-size:13px;cursor:pointer;" onclick="setTab('s-tasks')">Ver todas</span>
+      </div>
+      <div id="home-family-tasks"></div>
+    </div>
 
     <!-- Stats rápidas -->
     <div style="display:flex;gap:10px;margin-bottom:16px;" id="home-stats">
-      <div class="stat-box"><div class="val" id="stat-tasks">–</div><div class="lbl">Tareas hoy</div></div>
+      <div class="stat-box"><div class="val" id="stat-tasks">–</div><div class="lbl">Pendientes</div></div>
       <div class="stat-box"><div class="val" id="stat-meds">–</div><div class="lbl">Medicamentos</div></div>
       <div class="stat-box"><div class="val" id="stat-citas">–</div><div class="lbl">Próx. cita</div></div>
-    </div>
-
-    <!-- Próximas tareas -->
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <span style="font-size:16px;font-weight:700;">Tareas de hoy</span>
-        <span style="color:var(--green-main);font-size:13px;cursor:pointer;" onclick="setTab('s-tasks')">Ver todas</span>
-      </div>
-      <div id="home-tasks-list"><div class="empty-state" style="padding:24px;"><span class="ms">check_circle</span><p style="font-size:14px;margin:8px 0 0;">Sin tareas hoy 🎉</p></div></div>
     </div>
 
     <!-- Alertas activas -->
@@ -235,7 +261,7 @@
     <div class="card">
       <div style="font-size:15px;font-weight:700;margin-bottom:12px;">Acceso rápido</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <button onclick="openNewTask()" class="btn btn-outline btn-sm" style="flex-direction:column;gap:4px;padding:14px 8px;"><span class="ms">add_task</span>Nueva tarea</button>
+        <button onclick="goRoutines()" class="btn btn-outline btn-sm" style="flex-direction:column;gap:4px;padding:14px 8px;"><span class="ms">repeat</span>Rutinas</button>
         <button onclick="go('s-gps')" class="btn btn-outline btn-sm" style="flex-direction:column;gap:4px;padding:14px 8px;"><span class="ms">my_location</span>GPS</button>
         <button onclick="go('s-calendar')" class="btn btn-outline btn-sm" style="flex-direction:column;gap:4px;padding:14px 8px;"><span class="ms">calendar_month</span>Calendario</button>
         <button onclick="go('s-vet');loadVetScreen();" class="btn btn-outline btn-sm" style="flex-direction:column;gap:4px;padding:14px 8px;"><span class="ms">vaccines</span>Historial</button>
@@ -257,10 +283,9 @@
   <div class="scroll">
     <!-- Filtros -->
     <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;">
-      <div id="task-filter-all"   class="pet-chip active" onclick="filterTasks('all')">Todas</div>
+      <div id="task-filter-all"   class="pet-chip" onclick="filterTasks('all')">Todas</div>
       <div id="task-filter-today" class="pet-chip" onclick="filterTasks('today')">Hoy</div>
-      <div id="task-filter-pending" class="pet-chip" onclick="filterTasks('pending')">Pendientes</div>
-      <div id="task-filter-done"  class="pet-chip" onclick="filterTasks('done')">Completadas</div>
+      <div id="task-filter-pending" class="pet-chip active" onclick="filterTasks('pending')">Pendientes</div>
     </div>
     <div id="tasks-list"></div>
   </div>
@@ -381,16 +406,57 @@
 <div id="s-adopt" class="screen">
   <div class="topbar">
     <span class="ms">favorite</span>
-    <h1>Centro de adopción</h1>
+    <h1>Adopción</h1>
   </div>
   <div class="scroll">
-    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;">
-      <div class="pet-chip active" onclick="filterAdoptCat(this,'all')">Todos</div>
-      <div class="pet-chip" onclick="filterAdoptCat(this,'dog')">Perros</div>
-      <div class="pet-chip" onclick="filterAdoptCat(this,'cat')">Gatos</div>
-      <div class="pet-chip" onclick="filterAdoptCat(this,'other')">Otros</div>
-    </div>
+    <button onclick="go('s-adopt-add')" class="btn btn-primary" style="width:100%;font-size:16px;padding:16px;margin-bottom:20px;">🐾 Añadir nuevo</button>
     <div id="adopt-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PANTALLA: AÑADIR ANIMAL EN ADOPCIÓN
+═══════════════════════════════════════════════ -->
+<div id="s-adopt-add" class="screen">
+  <div class="topbar">
+    <button onclick="back()" style="background:none;border:none;color:#fff;cursor:pointer;"><span class="ms">arrow_back</span></button>
+    <h1>Publicar en adopción</h1>
+  </div>
+  <div class="scroll">
+    <div class="card" style="background:#FFF3E0;border:none;margin-bottom:16px;">
+      <p style="font-size:13px;color:#E65100;margin:0;">🐾 Rellena los datos del animal. Aparecerá en el listado para que cualquier familia interesada pueda contactar.</p>
+    </div>
+    <label class="label">Nombre *</label>
+    <input id="aa-name" class="input" placeholder="Luna, Max, Misi…" style="margin-bottom:14px;"/>
+    <label class="label">Especie *</label>
+    <select id="aa-species" class="input" style="margin-bottom:14px;">
+      <option value="dog">Perro 🐶</option>
+      <option value="cat">Gato 🐱</option>
+      <option value="rabbit">Conejo 🐰</option>
+      <option value="bird">Pájaro 🐦</option>
+      <option value="other">Otro 🐾</option>
+    </select>
+    <label class="label">Raza (opcional)</label>
+    <input id="aa-breed" class="input" placeholder="Mestizo, Labrador, Siamés…" style="margin-bottom:14px;"/>
+    <label class="label">Edad aproximada</label>
+    <input id="aa-age" class="input" type="number" min="0" step="1" placeholder="Meses de edad (ej: 18)" style="margin-bottom:14px;"/>
+    <label class="label">Tamaño</label>
+    <select id="aa-size" class="input" style="margin-bottom:14px;">
+      <option value="small">Pequeño (–10 kg)</option>
+      <option value="medium">Mediano (10–25 kg)</option>
+      <option value="large">Grande (25–45 kg)</option>
+      <option value="xlarge">Muy grande (+45 kg)</option>
+    </select>
+    <label class="label">Descripción / carácter *</label>
+    <textarea id="aa-desc" class="input" rows="3" placeholder="Dócil, juguetón, bueno con niños, busca sofá…" style="margin-bottom:14px;resize:none;"></textarea>
+    <div style="display:flex;gap:16px;margin-bottom:14px;">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;"><input type="checkbox" id="aa-vac" style="accent-color:var(--orange);"> 💉 Vacunado</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;"><input type="checkbox" id="aa-neu" style="accent-color:var(--orange);"> ✂️ Castrado</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:14px;"><input type="checkbox" id="aa-mic" style="accent-color:var(--orange);"> 📡 Microchip</label>
+    </div>
+    <label class="label">Contacto (teléfono o email) *</label>
+    <input id="aa-contact" class="input" placeholder="612 345 678 / email@ejemplo.com" style="margin-bottom:24px;"/>
+    <button id="btn-save-adopt" class="btn btn-primary" style="width:100%;" onclick="doSaveAdoptPet()">Publicar animal</button>
   </div>
 </div>
 
@@ -495,14 +561,31 @@
     </select>
     <label class="label">Dosis (opcional)</label>
     <input id="med-dose" class="input" placeholder="1 comprimido, 0.5ml…" style="margin-bottom:14px;"/>
-    <label class="label">Frecuencia (opcional)</label>
-    <input id="med-freq" class="input" placeholder="Cada 3 meses, diario, 1 semana…" style="margin-bottom:14px;"/>
     <label class="label">Fecha inicio</label>
     <input id="med-start" class="input" type="date" style="margin-bottom:14px;"/>
     <label class="label">Fecha fin (dejar vacío si sigue activo)</label>
     <input id="med-end" class="input" type="date" style="margin-bottom:14px;"/>
+
+    <!-- Tareas diarias: siempre visible si hay fecha inicio -->
+    <div style="background:#F3E5F5;border-radius:12px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:#4527A0;margin-bottom:10px;">📅 Recordatorios diarios</div>
+      <label class="label" style="color:#4527A0;">Veces al día</label>
+      <select id="med-task-freq" class="input" style="margin-bottom:10px;">
+        <option value="24">1 vez al día</option>
+        <option value="12">Cada 12 horas (2/día)</option>
+        <option value="8">Cada 8 horas (3/día)</option>
+        <option value="6">Cada 6 horas (4/día)</option>
+      </select>
+      <label class="label" style="color:#4527A0;">Hora primera toma</label>
+      <input id="med-task-time" class="input" type="time" value="08:00" style="margin-bottom:4px;">
+      <div style="font-size:11px;color:#9C27B0;margin-top:4px;">Se generan automáticamente tareas en los días del tratamiento</div>
+    </div>
+
+    <label class="label">Frecuencia en texto (opcional)</label>
+    <input id="med-freq" class="input" placeholder="Ej: Cada 3 meses, tras las comidas…" style="margin-bottom:14px;"/>
     <label class="label">Notas (opcional)</label>
     <input id="med-notes" class="input" placeholder="Recetado por, observaciones…" style="margin-bottom:24px;"/>
+
     <button id="btn-save-med" class="btn btn-primary" style="width:100%;" onclick="doSaveMed()">Guardar medicamento</button>
   </div>
 </div>
@@ -592,9 +675,22 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <span style="font-size:15px;font-weight:700;">🐾 Mis mascotas</span>
-        <button onclick="go('s-add-pet')" class="btn btn-primary btn-sm">+ Añadir</button>
+        <button onclick="go('s-add-pet');selectedPetEmoji='';renderPetEmojiPickerInForm();" class="btn btn-primary btn-sm">+ Añadir</button>
       </div>
       <div id="profile-pets-list"></div>
+    </div>
+    <!-- Rutinas -->
+    <div class="card" style="cursor:pointer;" onclick="goRoutines()">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--green-pale);display:flex;align-items:center;justify-content:center;">
+          <span class="ms" style="color:var(--green-main);">repeat</span>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:15px;font-weight:700;">Rutinas diarias</div>
+          <div style="font-size:12px;color:#888;">Paseos, comidas, cepillado… y quién los hace</div>
+        </div>
+        <span class="ms" style="color:#ccc;">chevron_right</span>
+      </div>
     </div>
     <!-- Editar cuenta -->
     <div class="card">
@@ -639,6 +735,160 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════
+     PANTALLA: RUTINAS
+═══════════════════════════════════════════════ -->
+<div id="s-routines" class="screen">
+  <div class="topbar">
+    <button onclick="back()" style="background:none;border:none;color:#fff;cursor:pointer;"><span class="ms">arrow_back</span></button>
+    <h1>Rutinas diarias</h1>
+    <button onclick="openAddRoutineModal()" style="background:none;border:none;color:#fff;cursor:pointer;" title="Añadir rutina"><span class="ms">add</span></button>
+  </div>
+  <div class="scroll">
+    <p style="font-size:13px;color:#888;margin:0 0 12px;">Configura quién hace cada tarea. Los paseos y comidas se generan solos cada día.</p>
+    <!-- Mascotas -->
+    <div id="routine-pet-chips" style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;"></div>
+
+    <!-- Obligatorias -->
+    <div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="ms" style="color:var(--green-main);">lock</span>
+        <span style="font-size:15px;font-weight:700;">Obligatorias</span>
+        <span style="font-size:11px;color:#aaa;margin-left:auto;">Se generan cada día</span>
+      </div>
+      <div id="mandatory-routines-list"></div>
+    </div>
+
+    <!-- Opcionales -->
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="ms" style="color:#888;">tune</span>
+        <span style="font-size:15px;font-weight:700;">Opcionales</span>
+        <button onclick="openAddRoutineModal()" class="btn btn-primary btn-sm" style="margin-left:auto;">+ Añadir</button>
+      </div>
+      <div id="optional-routines-list"></div>
+    </div>
+
+    <!-- Medicación -->
+    <div class="card" style="margin-top:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <span style="font-size:15px;font-weight:700;">💊 Medicación</span>
+          <div style="font-size:11px;color:#aaa;margin-top:1px;">Tratamientos con inicio y fin</div>
+        </div>
+        <button onclick="openMedicationModal()" class="btn btn-primary btn-sm">+ Añadir</button>
+      </div>
+      <div id="medication-list"><div style="font-size:13px;color:#aaa;padding:8px 0;">Sin tratamientos activos</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nuevo tratamiento de medicación -->
+<div id="modal-medication" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="section-title">💊 Nuevo tratamiento</div>
+    <label class="label">Nombre del medicamento</label>
+    <input id="med-name" class="input" placeholder="Ej: Amoxicilina, gotas oído…" style="margin-bottom:12px;"/>
+    <label class="label">Notas / dosis</label>
+    <input id="med-notes" class="input" placeholder="Ej: 5 gotas, con comida…" style="margin-bottom:12px;"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="label">Fecha inicio</label>
+        <input id="med-start" type="date" class="input"/>
+      </div>
+      <div>
+        <label class="label">Fecha fin</label>
+        <input id="med-end" type="date" class="input"/>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="label">Frecuencia</label>
+        <select id="med-freq" class="input">
+          <option value="24">1 vez al día</option>
+          <option value="12" selected>Cada 12h (2/día)</option>
+          <option value="8">Cada 8h (3/día)</option>
+          <option value="6">Cada 6h (4/día)</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Primera dosis</label>
+        <input id="med-time" type="time" class="input" value="08:00"/>
+      </div>
+    </div>
+    <label class="label">Asignar a</label>
+    <select id="med-assignee" class="input" style="margin-bottom:20px;"></select>
+    <button class="btn btn-primary" style="width:100%;" onclick="doSaveMedication()">Guardar tratamiento</button>
+    <button class="btn" style="width:100%;margin-top:8px;color:#999;" onclick="closeModal('modal-medication')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: Editar medicación -->
+<div id="modal-edit-med" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="section-title">Editar tratamiento</div>
+    <label class="label">Nombre</label>
+    <input id="edit-med-name" class="input" style="margin-bottom:12px;"/>
+    <label class="label">Fecha inicio</label>
+    <input id="edit-med-start" class="input" type="date" style="margin-bottom:12px;"/>
+    <label class="label">Fecha fin (vacío = sin fin)</label>
+    <input id="edit-med-end" class="input" type="date" style="margin-bottom:12px;"/>
+    <label class="label">Frecuencia</label>
+    <select id="edit-med-freq" class="input" style="margin-bottom:12px;">
+      <option value="24">1 vez al día</option>
+      <option value="12">Cada 12 horas</option>
+      <option value="8">Cada 8 horas</option>
+      <option value="6">Cada 6 horas</option>
+    </select>
+    <label class="label">Hora primera toma</label>
+    <input id="edit-med-time" class="input" type="time" style="margin-bottom:16px;"/>
+    <button class="btn btn-primary" style="width:100%;" onclick="doEditMedication()">Guardar cambios</button>
+    <button class="btn" style="width:100%;margin-top:8px;background:#FFF3E0;color:var(--orange);border:1px solid var(--orange);" onclick="stopMedicationToday()">⏹ Parar hoy</button>
+    <button class="btn" style="width:100%;margin-top:8px;color:#999;" onclick="closeModal('modal-edit-med')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: Nueva rutina opcional -->
+<div id="modal-new-routine" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="section-title">➕ Nueva rutina</div>
+    <label class="label">Tipo</label>
+    <select id="new-routine-type" class="input" style="margin-bottom:12px;">
+      <option value="walk">🦮 Paseo</option>
+      <option value="food" selected>🍽️ Comida</option>
+      <option value="grooming">✂️ Peluquería / Cepillado</option>
+      <option value="bath">🛁 Baño</option>
+      <option value="medication">💊 Medicamento</option>
+      <option value="vet">🏥 Veterinario</option>
+      <option value="play">🎾 Juego</option>
+      <option value="other">📌 Otro</option>
+    </select>
+    <label class="label">Nombre</label>
+    <input id="new-routine-title" class="input" placeholder="Ej: Cepillado semanal" style="margin-bottom:12px;"/>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div style="flex:1;">
+        <label class="label">Hora</label>
+        <input id="new-routine-time" class="input" type="time" value="09:00"/>
+      </div>
+      <div style="flex:1;">
+        <label class="label">Frecuencia</label>
+        <select id="new-routine-recurrence" class="input">
+          <option value="daily">Cada día</option>
+          <option value="weekly">Cada semana</option>
+          <option value="monthly">Cada mes</option>
+        </select>
+      </div>
+    </div>
+    <label class="label">Asignar a</label>
+    <select id="new-routine-assignee" class="input" style="margin-bottom:20px;"></select>
+    <button class="btn btn-primary" style="width:100%;" onclick="doAddRoutineTemplate()">Guardar rutina</button>
+    <button class="btn" style="width:100%;margin-top:8px;color:#999;" onclick="closeModal('modal-new-routine')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
      PANTALLA: AÑADIR MASCOTA
 ═══════════════════════════════════════════════ -->
 <div id="s-add-pet" class="screen">
@@ -649,8 +899,10 @@
   <div class="scroll">
     <label class="label">Nombre</label>
     <input id="pet-name-input" class="input" placeholder="Ej: Luna" style="margin-bottom:14px;"/>
+    <label class="label">Icono</label>
+    <div id="pet-emoji-picker-wrap" style="margin-bottom:14px;"></div>
     <label class="label">Especie</label>
-    <select id="pet-species-input" class="input" style="margin-bottom:14px;">
+    <select id="pet-species-input" class="input" style="margin-bottom:14px;" onchange="selectedPetEmoji='';renderPetEmojiPickerInForm()">
       <option value="dog">Perro</option>
       <option value="cat">Gato</option>
       <option value="bird">Pájaro</option>
@@ -698,9 +950,24 @@
     <label class="label">Título</label>
     <input id="task-title-input" class="input" placeholder="Paseo de la mañana" style="margin-bottom:14px;"/>
     <label class="label">Fecha y hora</label>
-    <input id="task-due-input" class="input" type="datetime-local" style="margin-bottom:20px;"/>
+    <input id="task-due-input" class="input" type="datetime-local" style="margin-bottom:14px;"/>
+    <label class="label">¿Quién lo hace?</label>
+    <select id="task-assignee-select" class="input" style="margin-bottom:20px;"></select>
     <button id="btn-save-task" class="btn btn-primary" style="width:100%;" onclick="doSaveTask()">Guardar tarea</button>
     <button class="btn" style="width:100%;margin-top:8px;color:#999;" onclick="closeModal('modal-task')">Cancelar</button>
+  </div>
+</div>
+
+<!-- Modal: Pasar tarea -->
+<div id="modal-swap" class="modal-overlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="section-title">↔️ Pasar tarea</div>
+    <p id="swap-task-title" style="font-size:14px;color:#555;margin:0 0 16px;"></p>
+    <label class="label">¿A quién se la pasas?</label>
+    <select id="swap-member-select" class="input" style="margin-bottom:20px;"></select>
+    <button class="btn btn-primary" style="width:100%;" onclick="doSwapTask()">Pasar tarea</button>
+    <button class="btn" style="width:100%;margin-top:8px;color:#999;" onclick="closeModal('modal-swap')">Cancelar</button>
   </div>
 </div>
 
@@ -723,7 +990,7 @@
 </div>
 
 <!-- Toast -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast"><span id="toast-msg"></span></div>
 
 <!-- ═══════════════════════════════════════════════
      JAVASCRIPT — Lógica principal
@@ -742,10 +1009,12 @@ let currentUser    = null;
 let currentProfile = null;
 let currentFamily  = null;
 let currentPets    = [];
+let familyMembers  = [];  // [{user_id, name}]
 let activePetId    = null;
 let screenHistory  = [];
-let allTasks       = [];
-let taskFilter     = 'all';
+let allTasks           = [];
+let taskFilter         = 'pending';
+let routineTemplates   = [];  // [{id, pet_id, type, title, scheduled_time, assigned_to, recurrence, is_mandatory}]
 let allServices    = [];
 let serviceCatFilter = 'all';
 let allAdoptions   = [];
@@ -806,11 +1075,32 @@ function setTab(screenId) {
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
+let _undoFn = null;
 function toast(msg, dur = 2500) {
+  _undoFn = null;
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  document.getElementById('toast-msg').textContent = msg;
+  // remove any undo button
+  const old = el.querySelector('.toast-undo');
+  if (old) old.remove();
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), dur);
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+function toastUndo(msg, fn, dur = 5000) {
+  _undoFn = fn;
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  const old = el.querySelector('.toast-undo');
+  if (old) old.remove();
+  const btn = document.createElement('button');
+  btn.className = 'toast-undo';
+  btn.textContent = 'Deshacer';
+  btn.onclick = () => { el.classList.remove('show'); if (_undoFn) { _undoFn(); _undoFn = null; } };
+  el.appendChild(btn);
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), dur);
 }
 
 // ── MODALES ───────────────────────────────────────────────────
@@ -889,6 +1179,9 @@ async function loadUserData() {
     if (membership) {
       currentFamily = membership.families;
       await loadPets();
+      await loadFamilyMembers();
+      await loadRoutineTemplates();
+      await ensureTodayRoutineTasks();
       renderHome();
       go('s-home');
     } else {
@@ -1055,16 +1348,53 @@ async function loadPets() {
   if (currentPets.length > 0 && !activePetId) activePetId = currentPets[0].id;
 }
 
-function petEmoji(species) {
+async function loadFamilyMembers() {
+  if (!currentFamily) return;
+  const { data } = await sb
+    .from('family_members')
+    .select('user_id, profiles(id, name)')
+    .eq('family_id', currentFamily.id);
+  familyMembers = (data || []).map(m => ({
+    user_id: m.user_id,
+    name: m.profiles?.name || 'Miembro'
+  }));
+}
+
+function memberName(userId) {
+  if (!userId) return '';
+  if (userId === currentUser?.id) return 'Yo';
+  return familyMembers.find(m => m.user_id === userId)?.name || 'Familiar';
+}
+
+function petEmoji(species, customEmoji) {
+  if (customEmoji) return customEmoji;
   const map = { dog:'🐶', cat:'🐱', bird:'🐦', rabbit:'🐰', other:'🐾' };
   return map[species] || '🐾';
+}
+
+const PET_EMOJI_OPTIONS = ['🐶','🐩','🦮','🐕','🐕‍🦺','🐱','🐈','🐈‍⬛','🐇','🐦','🦜','🐠','🐢','🐹','🐿️','🦔','🐾'];
+function renderPetEmojiPicker(selectedEmoji) {
+  return `<div id="pet-emoji-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">${PET_EMOJI_OPTIONS.map(e=>`<button type="button" onclick="selectPetEmoji('${e}')" class="pet-emoji-opt" style="font-size:26px;width:44px;height:44px;border-radius:10px;border:2px solid ${e===selectedEmoji?'var(--orange)':'#eee'};background:${e===selectedEmoji?'#FFF3E0':'#fafafa'};cursor:pointer;transition:all .15s;">${e}</button>`).join('')}</div>`;
+}
+let selectedPetEmoji = '';
+function selectPetEmoji(e) {
+  selectedPetEmoji = e;
+  document.querySelectorAll('.pet-emoji-opt').forEach(b => {
+    const isThis = b.textContent === e;
+    b.style.border = isThis ? '2px solid var(--orange)' : '2px solid #eee';
+    b.style.background = isThis ? '#FFF3E0' : '#fafafa';
+  });
+}
+function renderPetEmojiPickerInForm() {
+  const wrap = document.getElementById('pet-emoji-picker-wrap');
+  if (wrap) wrap.innerHTML = renderPetEmojiPicker(selectedPetEmoji);
 }
 
 function petAvatar(p, size=28) {
   if (p.photo_url) {
     return `<img src="${p.photo_url}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'"/>`;
   }
-  return `<span style="font-size:${Math.round(size*0.7)}px;">${petEmoji(p.species)}</span>`;
+  return `<span style="font-size:${Math.round(size*0.7)}px;">${petEmoji(p.species, p.emoji)}</span>`;
 }
 
 function renderPetChips(containerId) {
@@ -1092,29 +1422,55 @@ function renderHome() {
   renderPetChips('pet-chips');
   loadHomeDashboard();
   loadAlerts();
+  checkNotifBanner();
 }
 
 async function loadHomeDashboard() {
   if (!currentFamily) return;
   const today = new Date().toISOString().split('T')[0];
 
-  // Tareas de hoy
+  // Greeting
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Buenos días' : hour < 20 ? 'Buenas tardes' : 'Buenas noches';
+  const myName = familyMembers.find(m => m.user_id === currentUser?.id)?.name || '';
+  document.getElementById('home-greeting').textContent = myName ? `${greet}, ${myName}` : greet;
+
+  // Tareas de hoy (solo pendientes)
   const { data: tasks } = await sb
     .from('tasks')
     .select('*')
     .eq('family_id', currentFamily.id)
     .gte('due_at', today + 'T00:00:00')
     .lte('due_at', today + 'T23:59:59')
+    .is('completed_at', null)
     .order('due_at');
 
   allTasks = tasks || [];
-  document.getElementById('stat-tasks').textContent = allTasks.length;
+  scheduleTaskNotifications();
 
-  const tasksList = document.getElementById('home-tasks-list');
-  if (allTasks.length === 0) {
-    tasksList.innerHTML = `<div class="empty-state" style="padding:24px;"><span class="ms">check_circle</span><p style="font-size:14px;margin:8px 0 0;">Sin tareas hoy 🎉</p></div>`;
+  // Separar mis tareas vs resto
+  const myTasks = allTasks.filter(t => t.assigned_to === currentUser?.id && !t.completed_at);
+  const familyTasks = allTasks.filter(t => t.assigned_to !== currentUser?.id && !t.completed_at);
+  const pendingCount = myTasks.length;
+
+  document.getElementById('stat-tasks').textContent = pendingCount;
+
+  // Mis tareas
+  const myEl = document.getElementById('home-my-tasks');
+  if (myTasks.length === 0) {
+    myEl.innerHTML = `<div class="empty-state" style="padding:16px;"><span class="ms">check_circle</span><p style="font-size:14px;margin:8px 0 0;">¡Sin tareas hoy! 🎉</p></div>`;
   } else {
-    tasksList.innerHTML = allTasks.slice(0,4).map(t => renderTaskRow(t)).join('');
+    myEl.innerHTML = myTasks.map(t => renderTaskRow(t)).join('');
+  }
+
+  // Tareas de la familia
+  const famSection = document.getElementById('home-family-tasks-section');
+  const famEl = document.getElementById('home-family-tasks');
+  if (familyTasks.length > 0) {
+    famSection.style.display = '';
+    famEl.innerHTML = familyTasks.map(t => renderTaskRow(t, {noSwap: true})).join('');
+  } else {
+    famSection.style.display = 'none';
   }
 
   // Medicamentos activos
@@ -1156,25 +1512,34 @@ function taskTypeInfo(type) {
   return map[type] || map.other;
 }
 
-function renderTaskRow(t) {
+function renderTaskRow(t, opts={}) {
   const info = taskTypeInfo(t.type);
   const due = t.due_at ? new Date(t.due_at).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}) : '';
   const done = !!t.completed_at;
   const pet = t.pet_id ? currentPets.find(p => p.id === t.pet_id) : null;
-  const petLabel = pet ? `${petEmoji(pet.species)} ${escHtml(pet.name)}` : '';
+  const petLabel = pet ? `${petEmoji(pet.species, pet.emoji)} ${escHtml(pet.name)}` : '';
+  const assigneeLabel = t.assigned_to ? memberName(t.assigned_to) : '';
   const subtitle = [due, petLabel].filter(Boolean).join(' · ');
+  const isMyTask = t.assigned_to === currentUser?.id;
+  const swapBtn = (!done && !opts.noSwap && familyMembers.length > 1)
+    ? `<button onclick="openSwapModal('${t.id}')" class="btn btn-sm" style="flex-shrink:0;background:#f0f0f0;color:#555;margin-right:4px;" title="Pasar tarea"><span class="ms" style="font-size:16px;">swap_horiz</span></button>`
+    : '';
   return `
     <div class="task-row" style="${done ? 'opacity:.5;' : ''}">
       <div class="task-icon" style="background:${info.bg};">
         <span class="ms" style="color:${info.color};">${info.icon}</span>
       </div>
-      <div style="flex:1;">
+      <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:14px;${done ? 'text-decoration:line-through;' : ''}">${escHtml(t.title)}</div>
         <div style="font-size:12px;color:#888;">${subtitle}</div>
+        ${assigneeLabel ? `<div style="font-size:11px;color:var(--green-main);font-weight:600;margin-top:2px;">👤 ${assigneeLabel}</div>` : ''}
       </div>
       ${done
-        ? `<span class="ms" style="color:var(--green-main);">check_circle</span>`
-        : `<button onclick="completeTask('${t.id}')" class="btn btn-primary btn-sm" style="flex-shrink:0;">✓</button>`
+        ? `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">
+             <span class="ms" style="color:var(--green-main);font-size:22px;">check_circle</span>
+             <button onclick="uncompleteTask('${t.id}')" title="Deshacer" style="background:none;border:none;font-size:10px;color:#bbb;cursor:pointer;padding:0;line-height:1;">↩️ deshacer</button>
+           </div>`
+        : `<div style="display:flex;gap:4px;align-items:center;">${isMyTask ? swapBtn : ''}<button onclick="completeTask('${t.id}')" class="btn btn-primary btn-sm" style="flex-shrink:0;">✓</button></div>`
       }
     </div>`;
 }
@@ -1186,6 +1551,7 @@ async function loadTasks() {
     .from('tasks')
     .select('*')
     .eq('family_id', currentFamily.id)
+    .is('completed_at', null)
     .order('due_at', { ascending: true });
   allTasks = data || [];
   renderTasks();
@@ -1219,12 +1585,19 @@ function renderTasks() {
 // ── TAREAS: NUEVA ─────────────────────────────────────────────
 function openNewTask() {
   const sel = document.getElementById('task-pet-select');
-  sel.innerHTML = currentPets.map(p => `<option value="${p.id}">${petEmoji(p.species)} ${p.name}</option>`).join('');
+  sel.innerHTML = currentPets.map(p => `<option value="${p.id}">${petEmoji(p.species, p.emoji)} ${p.name}</option>`).join('');
   const now = new Date();
   now.setMinutes(0, 0, 0);
   now.setHours(now.getHours() + 1);
   document.getElementById('task-due-input').value = now.toISOString().slice(0,16);
   document.getElementById('task-title-input').value = '';
+  // Populate assignee selector
+  const asel = document.getElementById('task-assignee-select');
+  asel.innerHTML = [
+    `<option value="${currentUser.id}">Yo</option>`,
+    ...familyMembers.filter(m => m.user_id !== currentUser.id)
+      .map(m => `<option value="${m.user_id}">${escHtml(m.name)}</option>`)
+  ].join('');
   openModal('modal-task');
 }
 
@@ -1235,10 +1608,11 @@ async function doSaveTask() {
   const due   = document.getElementById('task-due-input').value;
   if (!title) { toast('⚠️ Escribe un título para la tarea'); return; }
   setBtnLoading('btn-save-task', true);
+  const assignee = document.getElementById('task-assignee-select').value || currentUser.id;
   const { error } = await sb.from('tasks').insert({
     family_id:  currentFamily.id,
     pet_id:     petId || null,
-    assigned_to: currentUser.id,
+    assigned_to: assignee,
     type, title,
     due_at: due || null,
     created_by: currentUser.id
@@ -1252,8 +1626,50 @@ async function doSaveTask() {
 }
 
 async function completeTask(taskId) {
-  await sb.from('tasks').update({ completed_at: new Date().toISOString() }).eq('id', taskId);
+  await sb.from('tasks').delete().eq('id', taskId);
+  allTasks = allTasks.filter(t => t.id !== taskId);
+  // Refrescar tanto el home como la pantalla de tareas
+  const myEl = document.getElementById('home-my-tasks');
+  const famEl = document.getElementById('home-family-tasks');
+  const today = new Date().toISOString().split('T')[0];
+  const myTasks = allTasks.filter(t => t.assigned_to === currentUser?.id && t.due_at?.startsWith(today));
+  const famTasks = allTasks.filter(t => t.assigned_to !== currentUser?.id && t.due_at?.startsWith(today));
+  if (myEl) myEl.innerHTML = myTasks.length ? myTasks.map(t => renderTaskRow(t)).join('') : `<div class="empty-state" style="padding:16px;"><span class="ms">check_circle</span><p style="font-size:14px;margin:8px 0 0;">¡Sin tareas hoy! 🎉</p></div>`;
+  if (famEl) { famEl.innerHTML = famTasks.map(t => renderTaskRow(t, {noSwap:true})).join(''); document.getElementById('home-family-tasks-section').style.display = famTasks.length ? '' : 'none'; }
+  document.getElementById('stat-tasks').textContent = myTasks.length;
+  renderTasks();
   toast('✅ ¡Tarea completada!');
+}
+
+async function uncompleteTask(taskId) {
+  await sb.from('tasks').update({ completed_at: null }).eq('id', taskId);
+  toast('↩️ Tarea desmarcada');
+  loadTasks();
+  loadHomeDashboard();
+}
+
+let swapTaskId = null;
+function openSwapModal(taskId) {
+  swapTaskId = taskId;
+  const task = allTasks.find(t => t.id === taskId);
+  document.getElementById('swap-task-title').textContent = task ? `"${task.title}"` : '';
+  const sel = document.getElementById('swap-member-select');
+  sel.innerHTML = familyMembers
+    .filter(m => m.user_id !== currentUser.id)
+    .map(m => `<option value="${m.user_id}">${escHtml(m.name)}</option>`)
+    .join('');
+  openModal('modal-swap');
+}
+
+async function doSwapTask() {
+  if (!swapTaskId) return;
+  const toUser = document.getElementById('swap-member-select').value;
+  const { error } = await sb.from('tasks').update({ assigned_to: toUser }).eq('id', swapTaskId);
+  closeModal('modal-swap');
+  if (error) { toast('❌ ' + error.message); return; }
+  const member = familyMembers.find(m => m.user_id === toUser);
+  toast(`↔️ Tarea pasada a ${member?.name || 'familiar'}`);
+  swapTaskId = null;
   loadTasks();
   loadHomeDashboard();
 }
@@ -1331,7 +1747,7 @@ function renderAlertCard(a) {
   const pet = a.pets;
   return `<div class="card alert-card" style="margin-bottom:10px;">
     <div style="display:flex;align-items:center;gap:10px;">
-      <div style="font-size:32px;">${pet ? petEmoji(pet.species) : '🐾'}</div>
+      <div style="font-size:32px;">${pet ? petEmoji(pet.species, pet.emoji) : '🐾'}</div>
       <div style="flex:1;">
         <div style="font-weight:700;color:var(--red);">${escHtml(a.title)}</div>
         <div style="font-size:12px;color:#888;">${a.last_seen_address || 'Ubicación desconocida'}</div>
@@ -1344,7 +1760,7 @@ function renderAlertCard(a) {
 
 function openLostAlert() {
   const sel = document.getElementById('alert-pet-select');
-  sel.innerHTML = currentPets.map(p => `<option value="${p.id}">${petEmoji(p.species)} ${p.name}</option>`).join('');
+  sel.innerHTML = currentPets.map(p => `<option value="${p.id}">${petEmoji(p.species, p.emoji)} ${p.name}</option>`).join('');
   openModal('modal-alert');
 }
 
@@ -1455,19 +1871,13 @@ async function loadAdoptions() {
   renderAdoptions();
 }
 
-function filterAdoptCat(el, cat) {
-  adoptCatFilter = cat;
-  document.querySelectorAll('#s-adopt .pet-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  renderAdoptions();
-}
+function filterAdoptCat(el, cat) { renderAdoptions(); }
 
 function renderAdoptions() {
   let list = allAdoptions;
-  if (adoptCatFilter !== 'all') list = list.filter(a => adoptCatFilter === 'other' ? !['dog','cat'].includes(a.species) : a.species === adoptCatFilter);
   const el = document.getElementById('adopt-list');
   if (list.length === 0) {
-    el.innerHTML = `<div class="empty-state"><span class="ms">pets</span><p>Sin animales disponibles</p></div>`;
+    el.innerHTML = `<div style="text-align:center;color:#aaa;font-size:14px;padding:20px 0;">Aún no hay animales publicados</div>`;
     return;
   }
   const sizeLabel = { small:'Pequeño', medium:'Mediano', large:'Grande', xlarge:'Muy grande' };
@@ -1484,13 +1894,52 @@ function renderAdoptions() {
             ${a.is_neutered   ? '<span class="chip-tag">✂️ Esterilizado</span>' : ''}
             ${a.is_microchipped ? '<span class="chip-tag">📡 Microchip</span>' : ''}
           </div>
-          <button onclick="requestAdoption('${a.id}','${escHtml(a.name)}')" class="btn btn-primary btn-sm" style="margin-top:10px;">Solicitar adopción</button>
+          ${a.contact_info ? `<div style="font-size:12px;color:#888;margin-top:6px;">📞 ${escHtml(a.contact_info)}</div>` : ''}
+          <button onclick="requestAdoption('${a.id}','${escHtml(a.name)}','${escHtml(a.contact_info||'')}')" class="btn btn-primary btn-sm" style="margin-top:8px;">${a.contact_info ? '📞 Contactar' : 'Solicitar adopción'}</button>
         </div>
       </div>
     </div>`).join('');
 }
 
-async function requestAdoption(petId, petName) {
+async function doSaveAdoptPet() {
+  const name    = document.getElementById('aa-name').value.trim();
+  const desc    = document.getElementById('aa-desc').value.trim();
+  const contact = document.getElementById('aa-contact').value.trim();
+  if (!name || !desc || !contact) { toast('⚠️ Nombre, descripción y contacto son obligatorios'); return; }
+  setBtnLoading('btn-save-adopt', true);
+  const ageVal = parseInt(document.getElementById('aa-age').value);
+  const { error } = await sb.from('adoption_pets').insert({
+    name,
+    species:        document.getElementById('aa-species').value,
+    breed:          document.getElementById('aa-breed').value.trim() || null,
+    age_months:     isNaN(ageVal) ? null : ageVal,
+    size:           document.getElementById('aa-size').value,
+    description:    desc,
+    is_vaccinated:  document.getElementById('aa-vac').checked,
+    is_neutered:    document.getElementById('aa-neu').checked,
+    is_microchipped:document.getElementById('aa-mic').checked,
+    contact_info:   contact,
+    status:         'available',
+    posted_by:      currentUser?.id || null,
+  });
+  setBtnLoading('btn-save-adopt', false, 'Publicar animal');
+  if (error) { toast('❌ ' + error.message); return; }
+  toast('🐾 ¡Animal publicado!');
+  ['aa-name','aa-breed','aa-age','aa-desc','aa-contact'].forEach(id => document.getElementById(id).value = '');
+  ['aa-vac','aa-neu','aa-mic'].forEach(id => document.getElementById(id).checked = false);
+  back();
+  loadAdoptions();
+}
+
+async function requestAdoption(petId, petName, contact) {
+  if (contact) {
+    toast(`📞 Contacta: ${contact}`);
+    // Si es número de teléfono, abre el marcador
+    if (/^[+\d\s]{6,}$/.test(contact)) {
+      setTimeout(() => { window.location.href = 'tel:' + contact.replace(/\s/g,''); }, 800);
+    }
+    return;
+  }
   if (!currentUser) { toast('Inicia sesión primero'); return; }
   const { error } = await sb.from('adoption_requests').insert({
     pet_id: petId,
@@ -1533,8 +1982,8 @@ async function renderProfile() {
     petsList.innerHTML = currentPets.map(p => `
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #f0f0f0;">
         ${p.photo_url
-          ? `<img src="${p.photo_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.outerHTML='<div style=\\'font-size:32px;\\'>${petEmoji(p.species)}</div>'">`
-          : `<div style="font-size:32px;">${petEmoji(p.species)}</div>`}
+          ? `<img src="${p.photo_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;" onerror="this.outerHTML='<div style=\\'font-size:32px;\\'>${petEmoji(p.species, p.emoji)}</div>'">`
+          : `<div style="font-size:32px;">${petEmoji(p.species, p.emoji)}</div>`}
         <div style="flex:1;">
           <div style="font-weight:600;">${escHtml(p.name)}</div>
           <div style="font-size:12px;color:#888;">${p.breed||p.species}${p.birth_date ? ' · '+calcAge(p.birth_date) : ''}${p.weight_kg ? ' · '+p.weight_kg+'kg' : ''}</div>
@@ -1597,11 +2046,23 @@ async function doChangePassword() {
 }
 
 async function confirmDeletePet(petId, petName) {
-  if (!confirm(`¿Eliminar a ${petName}?\n\nSe borrarán también todas sus tareas e historial. Esta acción no se puede deshacer.`)) return;
+  if (!confirm(`¿Eliminar a ${petName}?\n\nSe borrarán también todas sus tareas, medicamentos e historial. Esta acción no se puede deshacer.`)) return;
+
+  // Borrar todos los datos asociados a la mascota
+  await sb.from('tasks').delete().eq('pet_id', petId);
+  await sb.from('routine_templates').delete().eq('pet_id', petId);
+  await sb.from('medications').delete().eq('pet_id', petId);
+  await sb.from('medical_records').delete().eq('pet_id', petId);
+
   const { error } = await sb.from('pets').delete().eq('id', petId);
   if (error) { toast('❌ Error al eliminar: ' + error.message); return; }
+
+  // Limpiar estado local
   currentPets = currentPets.filter(p => p.id !== petId);
+  routineTemplates = routineTemplates.filter(t => t.pet_id !== petId);
+  allTasks = allTasks.filter(t => t.pet_id !== petId);
   if (activePetId === petId) activePetId = currentPets[0]?.id || null;
+
   toast(`🗑️ ${petName} eliminado/a`);
   renderHome();
   renderProfile();
@@ -1649,7 +2110,8 @@ async function doAddPet() {
     name, species,
     breed: breed || null,
     birth_date: birth || null,
-    weight_kg: isNaN(weight) ? null : weight
+    weight_kg: isNaN(weight) ? null : weight,
+    emoji: selectedPetEmoji || null,
   }).select().single();
   if (error) { setBtnLoading('btn-add-pet', false, 'Añadir mascota'); toast('❌ ' + error.message); return; }
 
@@ -1666,10 +2128,12 @@ async function doAddPet() {
   setBtnLoading('btn-add-pet', false, 'Añadir mascota');
   currentPets.push(data);
   activePetId = data.id;
+  selectedPetEmoji = '';
   // Reset form
   document.getElementById('pet-photo-input').value = '';
   document.getElementById('pet-photo-preview').innerHTML = `<span class="ms" style="font-size:32px;color:#aaa;">add_a_photo</span><span style="font-size:13px;color:#aaa;">Toca para añadir foto</span>`;
   document.getElementById('pet-photo-preview').style.border = '2px dashed #ccc';
+  renderPetEmojiPickerInForm();
   toast(`🐾 ${name} añadido/a`);
   renderHome();
   renderProfile();
@@ -1756,36 +2220,406 @@ async function activateRoutine(petId, species, petName) {
   document.getElementById('modal-routine')?.remove();
   toast('⏳ Creando rutina…');
   const routines = PET_ROUTINES[species] || PET_ROUTINES.other;
-  const today = new Date();
-  const tasks = routines.map(r => {
-    let due;
-    if (r.hour !== undefined) {
-      due = new Date(today);
-      due.setHours(r.hour, 0, 0, 0);
-    } else {
-      due = new Date(today);
-      due.setDate(due.getDate() + (r.daysFromNow || 0));
-      due.setHours(10, 0, 0, 0);
-    }
+
+  const templates = routines.map(r => {
+    let time = '09:00';
+    if (r.hour !== undefined) time = String(r.hour).padStart(2,'0') + ':00';
+    const isMandatory = (r.type === 'walk' || (r.type === 'food' && r.recurrence === 'daily'));
+    let recurrence = r.recurrence || 'daily';
+    let dayOfMonth = null;
+    if (recurrence === 'monthly' && r.daysFromNow) dayOfMonth = new Date().getDate();
     return {
       family_id: currentFamily.id,
       pet_id: petId,
-      assigned_to: currentUser.id,
-      created_by: currentUser.id,
       type: r.type,
       title: r.title,
-      notes: r.notes || null,
-      due_at: due.toISOString(),
-      is_recurring: r.is_recurring,
-      recurrence: r.recurrence,
+      scheduled_time: time,
+      assigned_to: currentUser.id,
+      recurrence,
+      day_of_month: dayOfMonth,
+      is_mandatory: isMandatory,
+      is_active: true,
     };
   });
 
-  const { error } = await sb.from('tasks').insert(tasks);
+  const { error } = await sb.from('routine_templates').insert(templates);
   if (error) { toast('❌ Error creando rutina: ' + error.message); return; }
-  toast(`🎉 Rutina activada — ${tasks.length} tareas creadas para ${petName}`);
+  toast(`🎉 Rutina activada para ${petName}`);
+  await loadRoutineTemplates();
+  await ensureTodayRoutineTasks();
   loadTasks();
   loadHomeDashboard();
+}
+
+// ── RUTINAS: CARGAR TEMPLATES ─────────────────────────────────
+async function loadRoutineTemplates() {
+  if (!currentFamily) return;
+  const { data } = await sb
+    .from('routine_templates')
+    .select('*')
+    .eq('family_id', currentFamily.id)
+    .eq('is_active', true)
+    .order('scheduled_time');
+  routineTemplates = data || [];
+}
+
+// ── RUTINAS: GENERAR TAREAS DE HOY ────────────────────────────
+async function ensureTodayRoutineTasks() {
+  if (!currentFamily || !routineTemplates.length) return;
+  const todayStr   = new Date().toISOString().split('T')[0];
+  const dayOfWeek  = new Date().getDay();
+  const dayOfMonth = new Date().getDate();
+
+  // Separar rutinas normales de medicación (tienen start_date/end_date)
+  const regularTemplates = routineTemplates.filter(t => !t.start_date);
+  const medTemplates     = routineTemplates.filter(t => t.start_date);
+
+  // ── Rutinas normales ────────────────────────────────────────
+  const applicable = regularTemplates.filter(t => {
+    if (t.recurrence === 'daily') return true;
+    if (t.recurrence === 'weekly')  return t.day_of_week  === dayOfWeek;
+    if (t.recurrence === 'monthly') return t.day_of_month === dayOfMonth;
+    return false;
+  });
+
+  if (applicable.length) {
+    const ids = applicable.map(t => t.id);
+    const { data: existing } = await sb.from('tasks')
+      .select('routine_template_id')
+      .in('routine_template_id', ids)
+      .eq('task_date', todayStr);
+    const doneSet = new Set((existing || []).map(t => t.routine_template_id));
+
+    const toInsert = applicable.filter(t => !doneSet.has(t.id)).map(t => {
+      const [h, m] = (t.scheduled_time || '09:00').split(':').map(Number);
+      const due = new Date(); due.setHours(h, m, 0, 0);
+      return {
+        family_id: currentFamily.id, pet_id: t.pet_id,
+        assigned_to: t.assigned_to || currentUser.id,
+        created_by: currentUser.id, type: t.type, title: t.title,
+        due_at: due.toISOString(), task_date: todayStr,
+        routine_template_id: t.id, is_recurring: true, recurrence: t.recurrence,
+      };
+    });
+    if (toInsert.length) await sb.from('tasks').insert(toInsert);
+  }
+
+  // ── Medicación: solo dentro del rango de fechas ─────────────
+  const activeMeds = medTemplates.filter(t =>
+    t.start_date <= todayStr && (!t.end_date || t.end_date >= todayStr)
+  );
+
+  for (const t of activeMeds) {
+    const freqH    = t.frequency_hours || 24;
+    const dosesDay = Math.round(24 / freqH);   // 1, 2, 3 o 4
+
+    // Ver cuántas tareas ya existen hoy para esta plantilla
+    const { data: ex } = await sb.from('tasks')
+      .select('id')
+      .eq('routine_template_id', t.id)
+      .eq('task_date', todayStr);
+    const existingCount = (ex || []).length;
+    if (existingCount >= dosesDay) continue;   // ya generadas
+
+    const [h0, m0] = (t.scheduled_time || '08:00').split(':').map(Number);
+    const toInsert = [];
+    for (let i = existingCount; i < dosesDay; i++) {
+      const totalMin = h0 * 60 + m0 + i * freqH * 60;
+      const due = new Date();
+      due.setHours(Math.floor(totalMin / 60) % 24, totalMin % 60, 0, 0);
+      const doseLabel = dosesDay > 1 ? ` (${i + 1}/${dosesDay})` : '';
+      toInsert.push({
+        family_id: currentFamily.id, pet_id: t.pet_id,
+        assigned_to: t.assigned_to || currentUser.id,
+        created_by: currentUser.id, type: 'medication',
+        title: t.title + doseLabel,
+        due_at: due.toISOString(), task_date: todayStr,
+        routine_template_id: t.id, is_recurring: false, recurrence: 'daily',
+      });
+    }
+    if (toInsert.length) await sb.from('tasks').insert(toInsert);
+  }
+}
+
+// ── RUTINAS: PANTALLA ─────────────────────────────────────────
+let routinePetId = null;
+
+function goRoutines() {
+  go('s-routines');
+  renderRoutinesScreen();
+}
+
+function renderRoutinesScreen() {
+  if (!currentPets.length) return;
+  if (!routinePetId || !currentPets.find(p => p.id === routinePetId)) {
+    routinePetId = currentPets[0].id;
+  }
+  renderRoutinePetChips();
+  renderRoutineTemplateList();
+}
+
+function renderRoutinePetChips() {
+  const el = document.getElementById('routine-pet-chips');
+  if (!el) return;
+  el.innerHTML = currentPets.map(p => `
+    <div class="pet-chip ${p.id === routinePetId ? 'active' : ''}"
+         onclick="routinePetId='${p.id}';renderRoutinesScreen();"
+         style="display:flex;align-items:center;gap:6px;">
+      ${petAvatar(p, 22)} ${escHtml(p.name)}
+    </div>`).join('');
+}
+
+function renderRoutineTemplateList() {
+  const pet = currentPets.find(p => p.id === routinePetId);
+  if (!pet) return;
+  const petTemplates = routineTemplates.filter(t => t.pet_id === routinePetId);
+  const mandatory = petTemplates.filter(t => t.is_mandatory);
+  const optional  = petTemplates.filter(t => !t.is_mandatory);
+
+  const memberOptions = [
+    `<option value="${currentUser.id}">Yo</option>`,
+    ...familyMembers.filter(m => m.user_id !== currentUser.id)
+      .map(m => `<option value="${m.user_id}">${escHtml(m.name)}</option>`)
+  ].join('');
+
+  function rowHtml(t) {
+    const info = taskTypeInfo(t.type);
+    const deleteBtn = t.is_mandatory ? '' :
+      `<button onclick="deleteRoutineTemplate('${t.id}')" style="background:none;border:none;color:#ccc;cursor:pointer;padding:4px;"><span class="ms" style="font-size:20px;">delete_outline</span></button>`;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+        <div style="width:36px;height:36px;border-radius:10px;background:${info.bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="ms" style="color:${info.color};font-size:18px;">${info.icon}</span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${escHtml(t.title)}</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;flex-wrap:wrap;">
+            <input type="time" value="${t.scheduled_time||'09:00'}"
+              onchange="updateRoutineTime('${t.id}',this.value)"
+              style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:12px;color:#555;"/>
+            <select onchange="updateRoutineAssignee('${t.id}',this.value)"
+              style="border:1px solid #e0e0e0;border-radius:6px;padding:3px 6px;font-size:12px;color:#333;">
+              ${memberOptions.replace(`value="${t.assigned_to||currentUser.id}"`, `value="${t.assigned_to||currentUser.id}" selected`)}
+            </select>
+            ${t.is_mandatory ? '<span style="font-size:10px;color:#aaa;font-weight:600;">OBLIGATORIA</span>' : ''}
+          </div>
+        </div>
+        ${deleteBtn}
+      </div>`;
+  }
+
+  const mandHtml = mandatory.length
+    ? mandatory.map(rowHtml).join('')
+    : `<div style="font-size:13px;color:#aaa;padding:12px 0;">Sin rutinas obligatorias — activa la rutina desde Perfil → Mascotas</div>`;
+
+  const optHtml = optional.length
+    ? optional.map(rowHtml).join('')
+    : `<div style="font-size:13px;color:#aaa;padding:8px 0;">Sin rutinas opcionales aún</div>`;
+
+  document.getElementById('mandatory-routines-list').innerHTML = mandHtml;
+  document.getElementById('optional-routines-list').innerHTML  = optHtml;
+  renderMedicationList();
+}
+
+async function updateRoutineTime(templateId, time) {
+  await sb.from('routine_templates').update({ scheduled_time: time }).eq('id', templateId);
+  const t = routineTemplates.find(r => r.id === templateId);
+  if (t) t.scheduled_time = time;
+  toast('⏰ Hora actualizada');
+}
+
+async function updateRoutineAssignee(templateId, userId) {
+  await sb.from('routine_templates').update({ assigned_to: userId }).eq('id', templateId);
+  const t = routineTemplates.find(r => r.id === templateId);
+  if (t) t.assigned_to = userId;
+  toast('👤 Asignación actualizada');
+}
+
+async function deleteRoutineTemplate(templateId) {
+  await sb.from('routine_templates').update({ is_active: false }).eq('id', templateId);
+  routineTemplates = routineTemplates.filter(r => r.id !== templateId);
+  renderRoutineTemplateList();
+  toast('🗑️ Rutina eliminada');
+}
+
+// ── MEDICACIÓN ────────────────────────────────────────────────
+function openMedicationModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('med-name').value   = '';
+  document.getElementById('med-notes').value  = '';
+  document.getElementById('med-start').value  = today;
+  document.getElementById('med-end').value    = '';
+  document.getElementById('med-freq').value   = '12';
+  document.getElementById('med-time').value   = '08:00';
+  const sel = document.getElementById('med-assignee');
+  sel.innerHTML = [
+    `<option value="${currentUser.id}">Yo</option>`,
+    ...familyMembers.filter(m => m.user_id !== currentUser.id)
+      .map(m => `<option value="${m.user_id}">${escHtml(m.name)}</option>`)
+  ].join('');
+  openModal('modal-medication');
+}
+
+async function doSaveMedication() {
+  const name  = document.getElementById('med-name').value.trim();
+  const notes = document.getElementById('med-notes').value.trim();
+  const start = document.getElementById('med-start').value;
+  const end   = document.getElementById('med-end').value;
+  const freq  = parseInt(document.getElementById('med-freq').value) || 24;
+  const time  = document.getElementById('med-time').value || '08:00';
+  const who   = document.getElementById('med-assignee').value || currentUser.id;
+  if (!name || !start) { toast('⚠️ Nombre y fecha de inicio son obligatorios'); return; }
+  const { data, error } = await sb.from('routine_templates').insert({
+    family_id: currentFamily.id,
+    pet_id: routinePetId,
+    type: 'medication', title: name,
+    scheduled_time: time,
+    assigned_to: who,
+    recurrence: 'daily',
+    start_date: start,
+    end_date: end || null,
+    frequency_hours: freq,
+    is_mandatory: false,
+    is_active: true,
+    notes: notes || null,
+  }).select().single();
+  if (error) { toast('❌ ' + error.message); return; }
+  routineTemplates.push(data);
+  closeModal('modal-medication');
+  renderRoutineTemplateList();
+  await ensureTodayRoutineTasks();
+  loadTasks(); loadHomeDashboard();
+  toast('💊 Tratamiento guardado');
+}
+
+function renderMedicationList() {
+  const pet = currentPets.find(p => p.id === routinePetId);
+  if (!pet) return;
+  const meds = routineTemplates.filter(t => t.pet_id === routinePetId && t.start_date);
+  const el   = document.getElementById('medication-list');
+  if (!el) return;
+  if (!meds.length) {
+    el.innerHTML = `<div style="font-size:13px;color:#aaa;padding:8px 0;">Sin tratamientos activos</div>`;
+    return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML = meds.map(t => {
+    const active  = t.start_date <= today && (!t.end_date || t.end_date >= today);
+    const freqMap = { 24:'1×día', 12:'Cada 12h', 8:'Cada 8h', 6:'Cada 6h' };
+    const freq    = freqMap[t.frequency_hours] || `Cada ${t.frequency_hours}h`;
+    const dateStr = t.end_date
+      ? `${fmtDate(t.start_date)} → ${fmtDate(t.end_date)}`
+      : `Desde ${fmtDate(t.start_date)}`;
+    return `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#F3E5F5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <span class="ms" style="color:#9C27B0;font-size:18px;">medication</span>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${escHtml(t.title)}</div>
+          ${t.notes ? `<div style="font-size:12px;color:#888;margin-top:1px;">${escHtml(t.notes)}</div>` : ''}
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">📅 ${dateStr} · ${freq} · ⏰ ${t.scheduled_time}</div>
+          <div style="font-size:11px;color:${active?'var(--green-main)':'#ccc'};font-weight:600;margin-top:2px;">${active?'● Activo':'● Finalizado'}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <button onclick="openEditMedication('${t.id}')" style="background:none;border:none;color:#aaa;cursor:pointer;padding:4px;" title="Editar"><span class="ms" style="font-size:20px;">edit</span></button>
+          <button onclick="deleteMedication('${t.id}')" style="background:none;border:none;color:#ccc;cursor:pointer;padding:4px;" title="Eliminar"><span class="ms" style="font-size:20px;">delete_outline</span></button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function fmtDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+let editingMedId = null;
+function openEditMedication(templateId) {
+  const t = routineTemplates.find(r => r.id === templateId);
+  if (!t) return;
+  editingMedId = templateId;
+  document.getElementById('edit-med-name').value  = t.title.replace(/^💊\s*/,'');
+  document.getElementById('edit-med-start').value = t.start_date || '';
+  document.getElementById('edit-med-end').value   = t.end_date   || '';
+  document.getElementById('edit-med-freq').value  = String(t.frequency_hours || 24);
+  document.getElementById('edit-med-time').value  = t.scheduled_time || '08:00';
+  openModal('modal-edit-med');
+}
+async function doEditMedication() {
+  if (!editingMedId) return;
+  const name  = document.getElementById('edit-med-name').value.trim();
+  const start = document.getElementById('edit-med-start').value;
+  const end   = document.getElementById('edit-med-end').value;
+  const freq  = parseInt(document.getElementById('edit-med-freq').value);
+  const time  = document.getElementById('edit-med-time').value;
+  if (!name || !start) { toast('⚠️ Nombre y fecha inicio obligatorios'); return; }
+  await sb.from('routine_templates').update({
+    title: `💊 ${name}`,
+    start_date: start,
+    end_date: end || null,
+    frequency_hours: freq,
+    scheduled_time: time,
+  }).eq('id', editingMedId);
+  closeModal('modal-edit-med');
+  await loadRoutineTemplates();
+  renderRoutineTemplateList();
+  toast('✅ Tratamiento actualizado');
+}
+async function stopMedicationToday() {
+  if (!editingMedId) return;
+  const today = new Date().toISOString().split('T')[0];
+  await sb.from('routine_templates').update({ end_date: today }).eq('id', editingMedId);
+  closeModal('modal-edit-med');
+  await loadRoutineTemplates();
+  renderRoutineTemplateList();
+  toast('⏹ Tratamiento parado hoy');
+}
+async function deleteMedication(templateId) {
+  if (!confirm('¿Eliminar este tratamiento?')) return;
+  await sb.from('routine_templates').update({ is_active: false }).eq('id', templateId);
+  routineTemplates = routineTemplates.filter(r => r.id !== templateId);
+  renderRoutineTemplateList();
+  toast('🗑️ Tratamiento eliminado');
+}
+
+function openAddRoutineModal() {
+  // populate assignee
+  const sel = document.getElementById('new-routine-assignee');
+  if (sel) {
+    sel.innerHTML = [
+      `<option value="${currentUser.id}">Yo</option>`,
+      ...familyMembers.filter(m => m.user_id !== currentUser.id)
+        .map(m => `<option value="${m.user_id}">${escHtml(m.name)}</option>`)
+    ].join('');
+  }
+  openModal('modal-new-routine');
+}
+
+async function doAddRoutineTemplate() {
+  const type  = document.getElementById('new-routine-type').value;
+  const title = document.getElementById('new-routine-title').value.trim();
+  const time  = document.getElementById('new-routine-time').value || '09:00';
+  const rec   = document.getElementById('new-routine-recurrence').value;
+  const assignee = document.getElementById('new-routine-assignee').value;
+  if (!title) { toast('⚠️ Escribe un nombre para la rutina'); return; }
+  const { data, error } = await sb.from('routine_templates').insert({
+    family_id: currentFamily.id,
+    pet_id: routinePetId,
+    type, title,
+    scheduled_time: time,
+    recurrence: rec,
+    assigned_to: assignee || currentUser.id,
+    is_mandatory: false,
+    is_active: true,
+  }).select().single();
+  if (error) { toast('❌ ' + error.message); return; }
+  routineTemplates.push(data);
+  closeModal('modal-new-routine');
+  document.getElementById('new-routine-title').value = '';
+  renderRoutineTemplateList();
+  toast('✅ Rutina añadida');
 }
 
 // ── GUARDAR VACUNA ────────────────────────────────────────────
@@ -1818,21 +2652,55 @@ async function doSaveMed() {
   if (!name) { toast('⚠️ El nombre es obligatorio'); return; }
   if (!activePetId) { toast('⚠️ Selecciona una mascota'); return; }
   setBtnLoading('btn-save-med', true);
-  const endDate = document.getElementById('med-end').value;
+  const endDate   = document.getElementById('med-end').value;
+  const startDate = document.getElementById('med-start').value || null;
+
+  // 1. Guardar en historial clínico (medications)
   const { error } = await sb.from('medications').insert({
     pet_id: activePetId,
     family_id: currentFamily.id,
     name,
     dose: document.getElementById('med-dose').value.trim() || null,
     frequency: document.getElementById('med-freq').value.trim() || null,
-    start_date: document.getElementById('med-start').value || null,
+    start_date: startDate,
     end_date: endDate || null,
     is_active: !endDate,
     notes: [document.getElementById('med-type').value, document.getElementById('med-notes').value.trim()].filter(Boolean).join(' · ') || null,
   });
+  if (error) { setBtnLoading('btn-save-med', false, 'Guardar medicamento'); toast('❌ ' + error.message); return; }
+
+  // 2. Si hay fecha de inicio → crear routine_template automáticamente
+  if (startDate) {
+    const freqH = parseInt(document.getElementById('med-task-freq').value) || 24;
+    const time  = document.getElementById('med-task-time').value || '08:00';
+    const dose  = document.getElementById('med-dose').value.trim();
+    const freqLabel = freqH === 24 ? '1×día' : `cada ${freqH}h`;
+    const { data: tmpl, error: tmplErr } = await sb.from('routine_templates').insert({
+      family_id: currentFamily.id,
+      pet_id: activePetId,
+      assigned_to: currentUser.id,
+      title: `💊 ${name}`,
+      type: 'medication',
+      recurrence: 'daily',
+      start_date: startDate,
+      end_date: endDate || null,
+      frequency_hours: freqH,
+      scheduled_time: time,
+      is_mandatory: false,
+      is_active: true,
+      notes: [dose, freqLabel].filter(Boolean).join(' · '),
+    }).select().single();
+    if (tmplErr) { toast('⚠️ Medicamento guardado pero error en tareas: ' + tmplErr.message); }
+    else {
+      routineTemplates.push(tmpl);
+      await ensureTodayRoutineTasks();
+      loadTasks();
+      loadHomeDashboard();
+    }
+  }
+
   setBtnLoading('btn-save-med', false, 'Guardar medicamento');
-  if (error) { toast('❌ ' + error.message); return; }
-  toast('💊 Medicamento guardado');
+  toast(startDate ? '💊 Medicamento guardado + tareas creadas' : '💊 Medicamento guardado');
   ['med-name','med-dose','med-freq','med-start','med-end','med-notes'].forEach(id => document.getElementById(id).value = '');
   back();
   loadVetScreen();
@@ -1869,6 +2737,10 @@ async function doSaveVisit() {
 }
 
 // ── HISTORIAL VET ─────────────────────────────────────────────
+function vetDelBtn(fn, id) {
+  return `<button onclick="${fn}('${id}')" style="background:none;border:none;color:#ddd;cursor:pointer;padding:4px;flex-shrink:0;" title="Eliminar"><span class="ms" style="font-size:20px;">delete_outline</span></button>`;
+}
+
 async function loadVetScreen() {
   if (!currentPets || currentPets.length === 0) {
     ['vet-vaccines-list','vet-meds-list','vet-records-list'].forEach(id => {
@@ -1879,21 +2751,77 @@ async function loadVetScreen() {
   }
   if (!activePetId) activePetId = currentPets[0].id;
   renderPetChips('vet-pet-chips');
+
+  const pet = currentPets.find(p => p.id === activePetId);
+  const petTag = pet ? `<span style="font-size:11px;color:var(--green-main);font-weight:600;">${petEmoji(pet.species, pet.emoji)} ${escHtml(pet.name)}</span>` : '';
+
   // Vacunas
   const { data: vacs } = await sb.from('vaccines').select('*').eq('pet_id', activePetId).order('administered_at', { ascending: false });
   document.getElementById('vet-vaccines-list').innerHTML = (vacs||[]).length
-    ? vacs.map(v => `<div class="task-row"><span class="ms" style="color:#9C27B0;">vaccines</span><div style="flex:1;"><div style="font-weight:600;font-size:14px;">${escHtml(v.name)}</div><div style="font-size:12px;color:#888;">${v.administered_at}${v.next_due_at?' · Próxima: '+v.next_due_at:''}</div></div></div>`).join('')
+    ? vacs.map(v => `
+        <div class="task-row">
+          <span class="ms" style="color:#9C27B0;flex-shrink:0;">vaccines</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;">${escHtml(v.name)}</div>
+            <div style="font-size:12px;color:#888;">${v.administered_at}${v.next_due_at?' · Próxima: '+v.next_due_at:''}</div>
+            <div style="margin-top:2px;">${petTag}</div>
+          </div>
+          ${vetDelBtn('deleteVaccine', v.id)}
+        </div>`).join('')
     : '<div style="color:#aaa;font-size:13px;">Sin vacunas registradas</div>';
-  // Medicamentos
-  const { data: meds } = await sb.from('medications').select('*').eq('pet_id', activePetId).eq('is_active', true);
+
+  // Medicamentos (todos, no solo activos)
+  const { data: meds } = await sb.from('medications').select('*').eq('pet_id', activePetId).order('start_date', { ascending: false });
   document.getElementById('vet-meds-list').innerHTML = (meds||[]).length
-    ? meds.map(m => `<div class="task-row"><span class="ms" style="color:#673AB7;">medication</span><div style="flex:1;"><div style="font-weight:600;font-size:14px;">${escHtml(m.name)}</div><div style="font-size:12px;color:#888;">${m.dose||''} · ${m.frequency||''}</div></div></div>`).join('')
-    : '<div style="color:#aaa;font-size:13px;">Sin medicamentos activos</div>';
-  // Historial
-  const { data: recs } = await sb.from('medical_records').select('*').eq('pet_id', activePetId).order('record_date', { ascending: false }).limit(10);
+    ? meds.map(m => {
+        const active = m.is_active || !m.end_date;
+        const dateStr = m.start_date ? (m.end_date ? `${fmtDate(m.start_date)} → ${fmtDate(m.end_date)}` : `Desde ${fmtDate(m.start_date)}`) : '';
+        return `
+          <div class="task-row">
+            <span class="ms" style="color:${active?'#673AB7':'#bbb'};flex-shrink:0;">medication</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:14px;${active?'':'color:#aaa;text-decoration:line-through;'}">${escHtml(m.name)}</div>
+              <div style="font-size:12px;color:#888;">${[m.dose, m.frequency, dateStr].filter(Boolean).join(' · ')}</div>
+              <div style="margin-top:2px;display:flex;gap:8px;align-items:center;">${petTag}${active?'<span style="font-size:10px;color:var(--green-main);font-weight:700;">● Activo</span>':'<span style="font-size:10px;color:#ccc;font-weight:700;">● Finalizado</span>'}</div>
+            </div>
+            ${vetDelBtn('deleteMedRecord', m.id)}
+          </div>`;
+      }).join('')
+    : '<div style="color:#aaa;font-size:13px;">Sin medicamentos registrados</div>';
+
+  // Historial clínico
+  const { data: recs } = await sb.from('medical_records').select('*').eq('pet_id', activePetId).order('record_date', { ascending: false }).limit(20);
   document.getElementById('vet-records-list').innerHTML = (recs||[]).length
-    ? recs.map(r => `<div class="task-row"><span class="ms" style="color:var(--red);">local_hospital</span><div style="flex:1;"><div style="font-weight:600;font-size:14px;">${escHtml(r.title)}</div><div style="font-size:12px;color:#888;">${r.record_date}${r.vet_name?' · '+r.vet_name:''}</div></div>${r.cost_eur?`<span style="font-size:12px;font-weight:600;color:#555;">${r.cost_eur}€</span>`:''}</div>`).join('')
+    ? recs.map(r => `
+        <div class="task-row">
+          <span class="ms" style="color:var(--red);flex-shrink:0;">local_hospital</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:14px;">${escHtml(r.title)}</div>
+            <div style="font-size:12px;color:#888;">${r.record_date}${r.vet_name?' · '+r.vet_name:''}</div>
+            <div style="margin-top:2px;display:flex;gap:8px;align-items:center;">${petTag}${r.cost_eur?`<span style="font-size:11px;font-weight:600;color:#555;">${r.cost_eur}€</span>`:''}</div>
+          </div>
+          ${vetDelBtn('deleteVisit', r.id)}
+        </div>`).join('')
     : '<div style="color:#aaa;font-size:13px;">Sin visitas registradas</div>';
+}
+
+async function deleteVaccine(id) {
+  if (!confirm('¿Eliminar esta vacuna?')) return;
+  await sb.from('vaccines').delete().eq('id', id);
+  toast('🗑️ Vacuna eliminada');
+  loadVetScreen();
+}
+async function deleteMedRecord(id) {
+  if (!confirm('¿Eliminar este medicamento del historial?')) return;
+  await sb.from('medications').delete().eq('id', id);
+  toast('🗑️ Medicamento eliminado');
+  loadVetScreen();
+}
+async function deleteVisit(id) {
+  if (!confirm('¿Eliminar esta visita?')) return;
+  await sb.from('medical_records').delete().eq('id', id);
+  toast('🗑️ Visita eliminada');
+  loadVetScreen();
 }
 
 // ── CALENDARIO ────────────────────────────────────────────────
@@ -1950,6 +2878,72 @@ window.go = function(screenId) {
 
 // ── INICIO ────────────────────────────────────────────────────
 init();
+
+// ── PWA: SERVICE WORKER ───────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e));
+  });
+}
+
+// ── NOTIFICACIONES ────────────────────────────────────────────
+function checkNotifBanner() {
+  if (!('Notification' in window)) return;
+  const banner = document.getElementById('notif-banner');
+  if (!banner) return;
+  if (Notification.permission === 'default') {
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function activateNotifications() {
+  const granted = await requestNotificationPermission();
+  document.getElementById('notif-banner').style.display = 'none';
+  if (granted) {
+    toast('🔔 Notificaciones activadas');
+    scheduleTaskNotifications();
+  } else {
+    toast('⚠️ No se pudieron activar las notificaciones');
+  }
+}
+
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+async function scheduleTaskNotifications() {
+  const granted = await requestNotificationPermission();
+  if (!granted || !allTasks.length) return;
+
+  const sw = navigator.serviceWorker?.controller;
+  const now = new Date();
+
+  allTasks.filter(t => !t.completed_at && t.due_at && t.assigned_to === currentUser?.id)
+    .forEach(t => {
+      const due = new Date(t.due_at);
+      const delay = due - now - 10 * 60 * 1000; // 10 min antes
+      if (delay < 0 || delay > 12 * 60 * 60 * 1000) return; // solo las próximas 12h
+
+      const pet = t.pet_id ? currentPets.find(p => p.id === t.pet_id) : null;
+      const petLabel = pet ? ` (${pet.name})` : '';
+      const timeStr = due.toLocaleTimeString('es', {hour:'2-digit', minute:'2-digit'});
+
+      if (sw) {
+        sw.postMessage({
+          type: 'SCHEDULE_NOTIFICATION',
+          title: `🐾 ${t.title}${petLabel}`,
+          body: `En 10 minutos — ${timeStr}`,
+          delay,
+        });
+      }
+    });
+}
 </script>
 
 <!-- ═══════════════════════════════════════════════

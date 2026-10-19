@@ -2265,7 +2265,8 @@ async function loadRoutineTemplates() {
 
 // ── RUTINAS: GENERAR TAREAS DE HOY ────────────────────────────
 async function ensureTodayRoutineTasks() {
-  if (!currentFamily || !routineTemplates.length) return;
+  if (!currentFamily || !routineTemplates.length) return;  const _todayStr = new Date().toISOString().split('T')[0];
+  await sb.from('tasks').delete().eq('family_id', currentFamily.id).not('routine_template_id', 'is', null).is('completed_at', null).lt('task_date', _todayStr);
 
   const DAYS_AHEAD = 7;
   const regularTemplates = routineTemplates.filter(t => !t.start_date);

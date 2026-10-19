@@ -2883,7 +2883,19 @@ window.go = function(screenId) {
 
 // ── INICIO ────────────────────────────────────────────────────
 init();
-
+// ── AUTO-REFRESH AL VOLVER AL APP ────────────────────────────
+let _lastActiveDate = new Date().toISOString().split('T')[0];
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && currentFamily) {
+    const today = new Date().toISOString().split('T')[0];
+    if (today !== _lastActiveDate) {
+      _lastActiveDate = today;
+      await ensureTodayRoutineTasks();
+    }
+    loadTasks();
+    loadHomeDashboard();
+  }
+});
 // ── PWA: SERVICE WORKER ───────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

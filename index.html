@@ -2307,7 +2307,7 @@ async function ensureTodayRoutineTasks() {
           routine_template_id: t.id, is_recurring: true, recurrence: t.recurrence,
         };
       });
-      if (toInsert.length) await sb.from('tasks').insert(toInsert);
+      if (toInsert.length) await sb.from('tasks').upsert(toInsert, { ignoreDuplicates: true });
     }
 
     // ── Medicación: solo dentro del rango de fechas ─────────────
@@ -2343,7 +2343,7 @@ async function ensureTodayRoutineTasks() {
           routine_template_id: t.id, is_recurring: false, recurrence: 'daily',
         });
       }
-      if (toInsert.length) await sb.from('tasks').insert(toInsert);
+      if (toInsert.length) await sb.from('tasks').upsert(toInsert, { ignoreDuplicates: true });
     }
   }
 }

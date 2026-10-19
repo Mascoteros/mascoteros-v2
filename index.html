@@ -2292,7 +2292,8 @@ async function ensureTodayRoutineTasks() {
       const { data: existing } = await sb.from('tasks')
         .select('routine_template_id')
         .in('routine_template_id', ids)
-        .eq('task_date', dateStr);
+         .eq('task_date', dateStr)
+        .is('completed_at', null);
       const doneSet = new Set((existing || []).map(t => t.routine_template_id));
 
       const toInsert = applicable.filter(t => !doneSet.has(t.id)).map(t => {
@@ -2321,7 +2322,8 @@ async function ensureTodayRoutineTasks() {
       const { data: ex } = await sb.from('tasks')
         .select('id')
         .eq('routine_template_id', t.id)
-        .eq('task_date', dateStr);
+      .eq('task_date', dateStr)
+        .is('completed_at', null);
       const existingCount = (ex || []).length;
       if (existingCount >= dosesDay) continue;
 

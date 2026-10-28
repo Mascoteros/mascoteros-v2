@@ -2294,6 +2294,10 @@ async function ensureTodayRoutineTasks() {
       if (t.recurrence === 'daily') return true;
       if (t.recurrence === 'weekly')  return t.day_of_week  === dayOfWeek;
       if (t.recurrence === 'monthly') return t.day_of_month === dayOfMonth;
+            if (t.recurrence === 'every_2_months') return t.day_of_month === dayOfMonth && date.getMonth() % 2 === 0;
+      if (t.recurrence === 'every_3_months') return t.day_of_month === dayOfMonth && date.getMonth() % 3 === 0;
+      if (t.recurrence === 'every_6_months') return t.day_of_month === dayOfMonth && date.getMonth() % 6 === 0;
+      if (t.recurrence === 'yearly') return t.day_of_month === dayOfMonth && date.getMonth() === new Date(t.created_at).getMonth();
       return false;
     });
 
